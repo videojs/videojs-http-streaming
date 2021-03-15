@@ -658,12 +658,15 @@ export const activeGroup = (type, settings) => (track) => {
 
   let variants = null;
 
+  // set to variants to main media active group
   if (media.attributes[type]) {
     variants = groups[media.attributes[type]];
   }
 
-  variants = variants || groups.main;
-
+  // if we don't have an AUDIO group listed for media
+  // then we should likely never return an activeGroup
+  // on a get. This will prevent audio only playlists
+  // from starting an audio playlist loader.
   if (typeof track === 'undefined') {
     return variants;
   }
@@ -672,6 +675,18 @@ export const activeGroup = (type, settings) => (track) => {
     // An active track was specified so a corresponding group is expected. track === null
     // means no track is currently active so there is no corresponding group
     return null;
+  }
+
+  const groupKeys = Object.keys(groups);
+
+  if (!variants && groupKeys.length === 1) {
+    // use the main group if it exists
+    if (groups.main) {
+      variants = groups.main;
+    // only one group, use that one
+    } else if (groupKeys.length === 1) {
+      variants = groups[groupKeys[0]];
+    }
   }
 
   return variants.filter((props) => props.id === track.id)[0] || null;
